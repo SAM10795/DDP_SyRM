@@ -1,7 +1,7 @@
 ******************************************************************************
              TMS320C2000 Linker PC v16.9.6                     
 ******************************************************************************
->> Linked Thu Jan 10 13:55:46 2019
+>> Linked Thu Jan 10 14:59:10 2019
 
 OUTPUT FILE NAME:   <DDP_Motor.out>
 ENTRY POINT SYMBOL: "_c_int00"  address: 00009aa2
@@ -13,8 +13,8 @@ MEMORY CONFIGURATION
 ----------------------  --------  ---------  --------  --------  ----  --------
 PAGE 0:
   BEGIN                 00000000   00000002  00000000  00000002  RWIX
-  RAMM0                 00000050   000003b0  00000004  000003ac  RWIX
-  RAML0                 00008000   00001000  000002ff  00000d01  RWIX
+  RAMM0                 00000050   000003b0  00000000  000003b0  RWIX
+  RAML0                 00008000   00001000  00000303  00000cfd  RWIX
   RAML1                 00009000   00001000  00000b88  00000478  RWIX
   RAML2                 0000a000   00001000  00000000  00001000  RWIX
   RAML3                 0000b000   00001000  00000000  00001000  RWIX
@@ -93,15 +93,15 @@ SECTION ALLOCATION MAP
  output                                  attributes/
 section   page    origin      length       input sections
 --------  ----  ----------  ----------   ----------------
-ramfuncs   0    00000050    00000004     
-                  00000050    00000004     DSP2833x_usDelay.obj (ramfuncs)
-
 .cinit     0    00008000    000002ff     
                   00008000    000002e5     main.obj (.cinit)
                   000082e5    0000000e     rts2800_fpu32.lib : exit.obj (.cinit)
                   000082f3    00000005                       : _lock.obj (.cinit:__lock)
                   000082f8    00000005                       : _lock.obj (.cinit:__unlock)
                   000082fd    00000002     --HOLE-- [fill = 0]
+
+ramfuncs   0    000082ff    00000004     
+                  000082ff    00000004     DSP2833x_usDelay.obj (ramfuncs)
 
 .text      0    00009000    00000b88     
                   00009000    00000961     main.obj (.text)
@@ -582,7 +582,7 @@ page  address   name
 1     00000c10  _CpuTimer2Regs                  
 1     0033fff8  _CsmPwl                         
 1     00000ae0  _CsmRegs                        
-0     00000050  _DSP28x_usDelay                 
+0     000082ff  _DSP28x_usDelay                 
 1     00000880  _DevEmuRegs                     
 1     00001000  _DmaRegs                        
 1     00006040  _ECanaLAMRegs                   
@@ -749,9 +749,9 @@ GLOBAL SYMBOLS: SORTED BY Symbol Address
 
 page  address   name                            
 ----  -------   ----                            
-0     00000050  _DSP28x_usDelay                 
 0     00008000  ___cinit__                      
 0     00008000  cinit                           
+0     000082ff  _DSP28x_usDelay                 
 0     00009000  .text                           
 0     00009000  ___text__                       
 0     00009000  _update_id                      

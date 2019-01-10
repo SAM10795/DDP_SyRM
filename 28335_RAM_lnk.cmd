@@ -1,6 +1,4 @@
 /*
-// TI File $Revision: /main/11 $
-// Checkin $Date: April 15, 2009   09:57:28 $
 //###########################################################################
 //
 // FILE:    28335_RAM_lnk.cmd
@@ -17,8 +15,10 @@
 //          another memory map file which has more memory defined.
 //
 //###########################################################################
-// $TI Release:   $
-// $Release Date:   $
+// $TI Release: F2833x/F2823x Header Files and Peripheral Examples V142 $
+// $Release Date: November  1, 2016 $
+// $Copyright: Copyright (C) 2007-2016 Texas Instruments Incorporated -
+//             http://www.ti.com/ ALL RIGHTS RESERVED $
 //###########################################################################
 */
 
@@ -121,16 +121,9 @@ SECTIONS
       The codestart section (found in DSP28_CodeStartBranch.asm)
       re-directs execution to the start of user code.  */
    codestart        : > BEGIN,     PAGE = 0
-   
-#ifdef __TI_COMPILER_VERSION__
-   #if __TI_COMPILER_VERSION__ >= 15009000
-    .TI.ramfunc : {} > RAML0,      PAGE = 0
-   #else
-   ramfuncs         : > RAML0,     PAGE = 0   
-   #endif
-#endif
-   
+   ramfuncs         : > RAML0,     PAGE = 0
    .text            : > RAML1,     PAGE = 0
+   .InitBoot        : > RAML1,     PAGE = 0
    .cinit           : > RAML0,     PAGE = 0
    .pinit           : > RAML0,     PAGE = 0
    .switch          : > RAML0,     PAGE = 0
