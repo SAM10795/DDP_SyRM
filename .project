@@ -24,4 +24,47 @@
 		<nature>org.eclipse.cdt.core.ccnature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>DSP2833x_CodeStartBranch.asm</name>
+			<type>1</type>
+			<locationURI>INSTALLROOT_2833X1/common/source/DSP2833x_CodeStartBranch.asm</locationURI>
+		</link>
+		<link>
+			<name>DSP2833x_DefaultIsr.c</name>
+			<type>1</type>
+			<locationURI>INSTALLROOT_2833X1/common/source/DSP2833x_DefaultIsr.c</locationURI>
+		</link>
+		<link>
+			<name>DSP2833x_GlobalVariableDefs.c</name>
+			<type>1</type>
+			<locationURI>INSTALLROOT_2833X1/headers/source/DSP2833x_GlobalVariableDefs.c</locationURI>
+		</link>
+		<link>
+			<name>DSP2833x_PieCtrl.c</name>
+			<type>1</type>
+			<location>C:/ti/C2000Ware_1_00_06_00_Software/device_support/f2833x/common/source/DSP2833x_PieCtrl.c</location>
+		</link>
+		<link>
+			<name>DSP2833x_PieVect.c</name>
+			<type>1</type>
+			<location>C:/ti/C2000Ware_1_00_06_00_Software/device_support/f2833x/common/source/DSP2833x_PieVect.c</location>
+		</link>
+		<link>
+			<name>DSP2833x_SysCtrl.c</name>
+			<type>1</type>
+			<location>C:/ti/C2000Ware_1_00_06_00_Software/device_support/f2833x/common/source/DSP2833x_SysCtrl.c</location>
+		</link>
+		<link>
+			<name>DSP2833x_usDelay.asm</name>
+			<type>1</type>
+			<locationURI>INSTALLROOT_2833X1/common/source/DSP2833x_usDelay.asm</locationURI>
+		</link>
+	</linkedResources>
+	<variableList>
+		<variable>
+			<name>INSTALLROOT_2833X1</name>
+			<value>$%7BTI_PRODUCTS_DIR%7D/C2000Ware_1_00_06_00_Software/device_support/f2833x</value>
+		</variable>
+	</variableList>
 </projectDescription>

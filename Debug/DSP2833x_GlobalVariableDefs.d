@@ -1,6 +1,6 @@
 # FIXED
 
-DSP2833x_GlobalVariableDefs.obj: ../DSP2833x_GlobalVariableDefs.c
+DSP2833x_GlobalVariableDefs.obj: C:/ti/C2000Ware_1_00_06_00_Software/device_support/f2833x/headers/source/DSP2833x_GlobalVariableDefs.c
 DSP2833x_GlobalVariableDefs.obj: C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_headers/include/DSP2833x_Device.h
 DSP2833x_GlobalVariableDefs.obj: C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_headers/include/DSP2833x_Adc.h
 DSP2833x_GlobalVariableDefs.obj: C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_headers/include/DSP2833x_DevEmu.h
@@ -21,7 +21,7 @@ DSP2833x_GlobalVariableDefs.obj: C:/ti/controlSUITE/device_support/f2833x/v142/D
 DSP2833x_GlobalVariableDefs.obj: C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_headers/include/DSP2833x_XIntrupt.h
 DSP2833x_GlobalVariableDefs.obj: C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_headers/include/DSP2833x_Xintf.h
 
-../DSP2833x_GlobalVariableDefs.c: 
+C:/ti/C2000Ware_1_00_06_00_Software/device_support/f2833x/headers/source/DSP2833x_GlobalVariableDefs.c: 
 C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_headers/include/DSP2833x_Device.h: 
 C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_headers/include/DSP2833x_Adc.h: 
 C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_headers/include/DSP2833x_DevEmu.h: 

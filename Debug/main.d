@@ -36,10 +36,11 @@ main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/_defs.h
 main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/stdlib.h
 main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/stdlibf.h
 main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/limits.h
+main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/clarke.h
 main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/park.h
 main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/ipark.h
-main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/clarke.h
 main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/pi.h
+main.obj: ../Gpio_encoder.h
 main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/svgen.h
 main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/drivers/f2833x_v2.0/f2833xpwm.h
 main.obj: C:/ti/controlSUITE/development_kits/~SupportFiles/F2833x_headers/f2833xbmsk.h
@@ -82,10 +83,11 @@ C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/_defs.h:
 C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/stdlib.h: 
 C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/stdlibf.h: 
 C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/limits.h: 
+C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/clarke.h: 
 C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/park.h: 
 C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/ipark.h: 
-C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/clarke.h: 
 C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/pi.h: 
+../Gpio_encoder.h: 
 C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/svgen.h: 
 C:/ti/controlSUITE/libs/app_libs/motor_control/drivers/f2833x_v2.0/f2833xpwm.h: 
 C:/ti/controlSUITE/development_kits/~SupportFiles/F2833x_headers/f2833xbmsk.h: 

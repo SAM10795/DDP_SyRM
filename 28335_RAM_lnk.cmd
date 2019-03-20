@@ -122,7 +122,7 @@ SECTIONS
       re-directs execution to the start of user code.  */
    codestart        : > BEGIN,     PAGE = 0
    ramfuncs         : > RAML0,     PAGE = 0
-   .text            : > RAML1,     PAGE = 0
+   .text            : >> RAML1|RAML2,     PAGE = 0
    .InitBoot        : > RAML1,     PAGE = 0
    .cinit           : > RAML0,     PAGE = 0
    .pinit           : > RAML0,     PAGE = 0
@@ -133,7 +133,7 @@ SECTIONS
    .econst          : > RAML5,     PAGE = 1
    .esysmem         : > RAMM1,     PAGE = 1
 
-   IQmath           : > RAML1,     PAGE = 0
+   IQmath           : > RAML3,     PAGE = 0
    IQmathTables     : > IQTABLES,  PAGE = 0, TYPE = NOLOAD
 
    /* Uncomment the section below if calling the IQNexp() or IQexp()

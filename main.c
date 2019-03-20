@@ -5,10 +5,11 @@ long GlobalQ = GLOBAL_Q;      // Used for legacy GEL & Graph Debug.
 #include <stdio.h>
 #include "DSP28x_Project.h"     // Device Headerfile and Examples Include File
 #include "IQmathLib.h"
+#include "clarke.h"
 #include "park.h"
 #include "ipark.h"
-#include "clarke.h"
 #include "pi.h"
+#include "Gpio_encoder.h"
 #include "svgen.h"
 #include "f2833xpwm.h"
 #include "f2833xileg_vdc.h"
@@ -17,36 +18,58 @@ long GlobalQ = GLOBAL_Q;      // Used for legacy GEL & Graph Debug.
 #define PI2 1.570796327
 #define PI23 2.09439510239
 #define PI 3.141592654
+#define SQRT32 0.8660254
 #define STEP_SIZE 0.0314159265
 #define ANGLE_CONV 0.00613592315
+
+#define PWM1_INT_ENABLE 1
+#define PWM1_TIMER_TBPRD 0x1D4B //1D4B => 7499 => 10kHz
 
 #define dim_Q 5
 #define dim_R 2
 
-unsigned int ot;
-unsigned int val;
+#define THRESH 10000
 
-_iq angle = _IQ(0.0);
-
-//Define Machine constants
-_iq Lq = _IQ(0.002);
-_iq Ld = _IQ(0.014);
-_iq Rs = _IQ(1);
-_iq p = _IQ(2);
-_iq T_step = _IQ(0.0001);
-_iq J = _IQ(0.005);
-_iq B = _IQ(0.0005);
+SVGEN sv=SVGEN_DEFAULTS;
+PWMGEN pwmgen = PWMGEN_DEFAULTS;
 
 CLARKE c1;
 PARK p1;
-IPARK ip_v;
 
 int ChSel[16] = {0};
 int ACQPS[16] = {0};
 int TrigSel[16] = {0};
 
-SVGEN sv=SVGEN_DEFAULTS;
-PWMGEN pwmgen = PWMGEN_DEFAULTS;
+float offA = 0.0;
+float offB = 0.0;
+
+float i_a = 0;
+float i_b = 0;
+
+unsigned int i =0;
+
+//Define Machine constants
+float Lq = 0.35;
+float Ld = 0.2;
+float Rs = 1.3;
+float p = 2;    //pole pairs
+float T_step = 0.0001;
+float J = 0.005;
+float B = 0.0005;
+
+float Vdc = 48.6;
+float Vs = 0.0;
+
+IPARK ip_v;
+
+float a = 0.0;
+float w = 0.0;
+float w_rpm = 0.0;
+int s = 0;
+
+float angle = 0.0;
+
+float freq_e = 1;
 
 //PI controller variables
 
@@ -54,325 +77,198 @@ PI_CONTROLLER pi_id=PI_CONTROLLER_DEFAULTS;
 PI_CONTROLLER pi_iq=PI_CONTROLLER_DEFAULTS;
 PI_CONTROLLER pi_w=PI_CONTROLLER_DEFAULTS;
 
-_iq kp_id=_IQ(0);
-_iq kp_iq=_IQ(0);
-_iq kp_w=_IQ(0);
-_iq ki_id=_IQ(0);
-_iq ki_iq=_IQ(0);
-_iq ki_w=_IQ(0);
+float kp_id=2.20;
+float kp_iq=1.2570;
+float kp_w=0.30;
+float ki_id=8.168;
+float ki_iq=8.168;
+float ki_w=0.10;
 
-_iq id_max=_IQ(0);
-_iq iq_max=_IQ(0);
-_iq w_max=_IQ(0);
-_iq id_min=_IQ(0);
-_iq iq_min=_IQ(0);
-_iq w_min=_IQ(0);
+float id_max=5;
+float iq_max=5;
+float w_max=500;
+float id_min=-5;
+float iq_min=-5;
+float w_min=-500;
 
 //PI controller variables end
 
 //Voltage variables
 
-_iq v_d=_IQ(1);
-_iq v_q=_IQ(0);
+float vd=0.0;
+float vq=0.0;
 
-_iq v_al=_IQ(1);
-_iq v_be=_IQ(0);
+float v_al=1.0;
+float v_be=0.0;
 
 //Voltage variables end
 
-//Current variables
-
-_iq i_a = _IQ(0);
-_iq i_b = _IQ(1);
-_iq i_al = _IQ(0);
-_iq i_be = _IQ(0);
-
-//Current variables end
-
 //Estimated variables
 
-_iq w_e=_IQ(0);
-_iq id=_IQ(0);
-_iq iq=_IQ(0);
-_iq Tl_est=_IQ(0);
-
-_iq angle=_IQ(0);
-_iq angle_sin=_IQ(0);
-_iq angle_cos=_IQ(1);
+float w_e=0;
+float id=0;
+float iq=0;
+float Tl_est=0;
 
 //Estimated variables end
 
 //Reference variables
 
-_iq id_ref = _IQ(0);    //Id reference
-_iq w_e_ref = _IQ(0);     //Omega_electrical reference
+float id_ref = 1.0;    //Id reference
+float w_e_ref = 0;     //Omega_electrical reference
 
 //Reference variables end
 
-_iq w_mult = _IQ(0);    //1.5*p*(Ld-Lq)/Id_ref to be updated as Id_ref changes
+float w_mult = 0.45;    //1.5*p*(Ld-Lq)/Id_ref to be updated as Id_ref changes
 
 //Kalman filter constants
+//
 
+__interrupt void epwm1_timer_isr(void);
 
-_iq Rs_Ld,Rs_Lq,B_J,pxLd_Lq,pxLq_Ld,pxLdLq_J,u_J,pT,T_Ld,T_Lq;
+unsigned int EPwm1TimerIntCount;
 
-
-_iq Q[dim_Q][dim_Q] = {{_IQ(0.001),_IQ(0),_IQ(0),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0.001),_IQ(0),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0.001),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0),_IQ(0.001),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0.001)}};
-
-_iq R[dim_R][dim_R] = {{_IQ(0.001),_IQ(0)},{_IQ(0),_IQ(0.001)}};
-
-_iq tempR[dim_R][dim_R] = {{_IQ(0),_IQ(0)},{_IQ(0),_IQ(0)}};
-
-_iq A[dim_Q][dim_Q] = {{_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0)}};
-
-_iq P[dim_Q][dim_Q] = {{_IQ(0.001),_IQ(0),_IQ(0),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0.001),_IQ(0),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0.001),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0),_IQ(0.001),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0.001)}};
-
-_iq tempP[dim_Q][dim_Q] = {{_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0)}};
-
-_iq tempP2[dim_Q][dim_Q] = {{_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0)}};
-
-_iq C[dim_R][dim_Q] = {{_IQ(0.001),_IQ(0),_IQ(0),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0.001)}};
-
-_iq tempC[dim_R][dim_Q] = {{_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0)}};
-
-_iq K[dim_Q][dim_R] = {{_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0)},
-                       {_IQ(0),_IQ(0)}};
-
-_iq X[dim_Q] = {_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0)};
-_iq X_o[dim_Q] = {_IQ(0),_IQ(0),_IQ(0),_IQ(0),_IQ(0)};
-
-_iq Y[dim_R] = {_IQ(0),_IQ(0)};
-
-void update_id(int id_ref_new)
+void
+InitEPwmTimer(void)
 {
-    w_mult = _IQdiv(_IQmpy(w_mult,id_ref),id_ref_new);
-    id_ref = id_ref_new;
-}
-
-void getP_predict()
-{
-    int i=0,j=0,k=0;
-    for(i=0;i<dim_Q;i++)
-    {
-        for(j=0;j<dim_Q;j++)
-        {
-            tempP[i][j] = _IQ(0);
-            for(k=0;k<dim_Q;k++)
-            {
-                tempP[i][j]+=_IQmpy(A[i][k],P[k][j]);
-            }
-        }
-    }
-    for(i=0;i<dim_Q;i++)
-    {
-        for(j=0;j<dim_Q;j++)
-        {
-            P[i][j] = Q[i][j];
-            for(k=0;k<dim_Q;k++)
-            {
-                P[i][j]+=_IQmpy(tempP[i][k],A[j][k]);
-            }
-        }
-    }
-}
-
-void getK()
-{
-    int i=0,j=0,k=0;
-
-    for(i=0;i<dim_Q;i++)
-    {
-        for(j=0;j<dim_R;j++)
-        {
-            tempC[i][j]=_IQ(0);
-            for(k=0;k<dim_Q;k++)
-            {
-                tempC[i][j] += _IQmpy(P[i][k],C[j][k]);
-            }
-        }
-    }
-    //tempC = P_ixC' = 5x2
-
-    for(i=0;i<dim_R;i++)
-    {
-        for(j=0;j<dim_R;j++)
-        {
-            tempR[i][j] = R[i][j];
-            for(k=0;k<dim_Q;k++)
-            {
-                tempR[i][j] += _IQmpy(C[i][k],tempC[k][j]);
-            }
-        }
-    }
-
-    _iq detR = _IQmpy(tempR[0][0],tempR[1][1]) - _IQmpy(tempR[0][1],tempR[1][0]);
-    tempR[0][0] = _IQdiv(tempR[0][0],detR);
-    tempR[0][1] = _IQdiv(tempR[0][1],detR);
-    tempR[1][0] = _IQdiv(tempR[1][0],detR);
-    tempR[1][1] = _IQdiv(tempR[1][1],detR);
-
-    _iq temp = tempR[0][0];
-    tempR[0][0] = tempR[1][1];
-    tempR[1][1] = temp;
-    tempR[0][1] = -tempR[0][1];
-    tempR[1][0] = -tempR[1][0];
-
-    for(i=0;i<dim_Q;i++)
-    {
-        K[i][0] = _IQmpy(tempC[i][0],tempR[0][0]) + _IQmpy(tempC[i][1],tempR[1][0]);
-        K[i][1] = _IQmpy(tempC[i][0],tempR[0][1]) + _IQmpy(tempC[i][1],tempR[1][1]);
-    }
-
-}
-
-void getP_correct()
-{
-    int i=0,j=0,k=0;
-    for(i=0;i<dim_Q;i++)
-    {
-        for(j=0;j<dim_Q;j++)
-        {
-            tempP[i][j] = -(_IQmpy(K[i][0],C[0][j]) + _IQmpy(K[i][1],C[1][j]));
-            tempP2[i][j] = P[i][j];
-        }
-    }
-    tempP[0][0] = _IQ(1) + tempP[0][0];
-    tempP[1][1] = _IQ(1) + tempP[1][1];
-    tempP[2][2] = _IQ(1) + tempP[2][2];
-    tempP[3][3] = _IQ(1) + tempP[3][3];
-    tempP[4][4] = _IQ(1) + tempP[4][4];
-
-    for(i=0;i<dim_Q;i++)
-    {
-        for(j=0;j<dim_Q;j++)
-        {
-            P[i][j] = _IQ(0);
-            for(k=0;k<dim_Q;k++)
-            {
-                P[i][j] += _IQmpy(tempP[i][k],P[k][j]);
-            }
-        }
-    }
-}
-
-_iq sgn(_iq x)
-{
-    return (x>0?_IQ(1):(x==0?_IQ(0):_IQ(-1)));
-}
-
-unsigned int GTB(unsigned int num)
-{
-    unsigned int mask = num >> 1;
-    while (mask != 0)
-    {
-        num = num ^ mask;
-        mask = mask >> 1;
-    }
-    return (num+1);
-}
-
-void get_angle()
-{
-    ot = (1-GpioDataRegs.GPBDAT.bit.GPIO60)+
-                    ((1-GpioDataRegs.GPBDAT.bit.GPIO61)<<1)+
-                    ((1-GpioDataRegs.GPBDAT.bit.GPIO32)<<2)+
-                    ((1-GpioDataRegs.GPBDAT.bit.GPIO33)<<3)+
-                    ((1-GpioDataRegs.GPADAT.bit.GPIO24)<<4)+
-                    ((1-GpioDataRegs.GPADAT.bit.GPIO25)<<5)+
-                    ((1-GpioDataRegs.GPADAT.bit.GPIO26)<<6)+
-                    ((1-GpioDataRegs.GPADAT.bit.GPIO11)<<7)+
-                    ((1-GpioDataRegs.GPADAT.bit.GPIO10)<<8)+
-                    ((1-GpioDataRegs.GPADAT.bit.GPIO9)<<9);
-
-    val = GTB(ot);
-    angle = _IQmpy(val,ANGLE_CONV);
-}
-
-
-void init_reg()
-{
-
-    /************************************
-     *      ENCODER INITIALIZER BLOCK        *
-     ************************************/
-
     EALLOW;
-
-    GpioCtrlRegs.GPBPUD.bit.GPIO60=1;//bit 0
-    GpioCtrlRegs.GPBPUD.bit.GPIO61=1;//bit 1
-    GpioCtrlRegs.GPBPUD.bit.GPIO32=1;//bit 2
-    GpioCtrlRegs.GPBPUD.bit.GPIO33=1;//bit 3
-    GpioCtrlRegs.GPAPUD.bit.GPIO24=1;//bit 4
-    GpioCtrlRegs.GPAPUD.bit.GPIO25=1;//bit 5
-    GpioCtrlRegs.GPAPUD.bit.GPIO26=1;//bit 6
-    GpioCtrlRegs.GPAPUD.bit.GPIO11=1;//bit 7
-    GpioCtrlRegs.GPAPUD.bit.GPIO10=1;//bit 8
-    GpioCtrlRegs.GPAPUD.bit.GPIO9=1;//bit 9
-
-    GpioCtrlRegs.GPBMUX2.bit.GPIO60=0;//bit 0
-    GpioCtrlRegs.GPBMUX2.bit.GPIO61=0;//bit 1
-    GpioCtrlRegs.GPBMUX1.bit.GPIO32=0;//bit 2
-    GpioCtrlRegs.GPBMUX1.bit.GPIO33=0;//bit 3
-    GpioCtrlRegs.GPAMUX2.bit.GPIO24=0;//bit 4
-    GpioCtrlRegs.GPAMUX2.bit.GPIO25=0;//bit 5
-    GpioCtrlRegs.GPAMUX2.bit.GPIO26=0;//bit 6
-    GpioCtrlRegs.GPAMUX1.bit.GPIO11=0;//bit 7
-    GpioCtrlRegs.GPAMUX1.bit.GPIO10=0;//bit 8
-    GpioCtrlRegs.GPAMUX1.bit.GPIO9=0;//bit 9
-
-    GpioCtrlRegs.GPBDIR.bit.GPIO60=0;//bit 0
-    GpioCtrlRegs.GPBDIR.bit.GPIO61=0;//bit 1
-    GpioCtrlRegs.GPBDIR.bit.GPIO32=0;//bit 2
-    GpioCtrlRegs.GPBDIR.bit.GPIO33=0;//bit 3
-    GpioCtrlRegs.GPADIR.bit.GPIO24=0;//bit 4
-    GpioCtrlRegs.GPADIR.bit.GPIO25=0;//bit 5
-    GpioCtrlRegs.GPADIR.bit.GPIO26=0;//bit 6
-    GpioCtrlRegs.GPADIR.bit.GPIO11=0;//bit 7
-    GpioCtrlRegs.GPADIR.bit.GPIO10=0;//bit 8
-    GpioCtrlRegs.GPADIR.bit.GPIO9=0;//bit 9
-
-    GpioCtrlRegs.GPBQSEL2.bit.GPIO60=1;//bit0
-    GpioCtrlRegs.GPBQSEL2.bit.GPIO61=1;//bit1
-    GpioCtrlRegs.GPBQSEL1.bit.GPIO32=1;//bit2
-    GpioCtrlRegs.GPBQSEL1.bit.GPIO33=1;//bit3
-    GpioCtrlRegs.GPAQSEL2.bit.GPIO24=1;//bit4
-    GpioCtrlRegs.GPAQSEL2.bit.GPIO25=1;//bit5
-    GpioCtrlRegs.GPAQSEL2.bit.GPIO26=1;//bit6
-    GpioCtrlRegs.GPAQSEL1.bit.GPIO11=1;//bit7
-    GpioCtrlRegs.GPAQSEL1.bit.GPIO10=1;//bit8
-    GpioCtrlRegs.GPAQSEL1.bit.GPIO9=1;//bit9
-
-
+    SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 0;      // Stop all the TB clocks
     EDIS;
 
-    /******************
-     *  END OF BLOCK  *
-     ******************/
+    //
+    // Setup Sync
+    //
+    EPwm1Regs.TBCTL.bit.SYNCOSEL = TB_SYNC_IN;  // Pass through
+
+    //
+    // Allow each timer to be sync'ed
+    //
+    EPwm1Regs.TBCTL.bit.PHSEN = TB_ENABLE;
+
+    EPwm1Regs.TBPHS.half.TBPHS = 100;
+
+    EPwm1Regs.TBPRD = PWM1_TIMER_TBPRD;
+    EPwm1Regs.TBCTL.bit.CTRMODE = TB_COUNT_UP;    // Count up
+    EPwm1Regs.ETSEL.bit.INTSEL = ET_CTR_ZERO;     // Select INT on Zero event
+    EPwm1Regs.ETSEL.bit.INTEN = PWM1_INT_ENABLE;  // Enable INT
+    EPwm1Regs.ETPS.bit.INTPRD = ET_1ST;           // Generate INT on 1st event
+
+    EALLOW;
+    SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1;       // Start all the timers synced
+    EDIS;
+}
+
+void
+SetupEPwmTimer(void)
+{
+    EALLOW;  // This is needed to write to EALLOW protected registers
+    PieVectTable.EPWM1_INT = &epwm1_timer_isr;
+    EDIS;    // This is needed to disable write to EALLOW protected registers
+
+    EPwm1TimerIntCount = 0;
+
+    InitEPwmTimer();
+
+    IER |= M_INT3;
+
+    PieCtrlRegs.PIEIER3.bit.INTx1 = PWM1_INT_ENABLE;
+
+    //
+    // Enable global Interrupts and higher priority real-time debug events
+    //
+    EINT;       // Enable Global interrupt INTM
+    ERTM;       // Enable Global realtime interrupt DBGM
+
+}
+
+
+void Init_svpwm()
+{
+    pwmgen.PeriodMax=7500;
+    pwmgen.HalfPerMax=pwmgen.PeriodMax/2;
+    pwmgen.Deadband=200;
+    PWM_INIT_MACRO(2,3,4,pwmgen);
+}
+
+void Init_adc()
+{
+    ChSel[0] = 4;
+    ChSel[1] = 5;
+    ACQPS[0] = 1;
+    ADC_MACRO_INIT(ChSel,TrigSel,ACQPS);
+}
+
+void setOffset(unsigned int i)
+{
+    if(i<THRESH)
+    {
+        offA += (AdcMirror.ADCRESULT0);
+        offB += (AdcMirror.ADCRESULT1);
+    }
+    else if(i == THRESH)
+    {
+        offA = offA/(float)i;
+        offB = offB/(float)i;
+    }
+}
+
+void init_reg()
+{//
+    // Step 1. Initialize System Control:
+    // PLL, WatchDog, enable Peripheral Clocks
+    // This example function is found in the DSP2833x_SysCtrl.c file.
+    //
+    InitSysCtrl();
+
+    //
+    // Step 2. Initialize GPIO:
+    // This example function is found in the DSP2833x_Gpio.c file and
+    // illustrates how to set the GPIO to it's default state.
+    //
+    //InitGpio(); // Skipped for this example
+    InitEPwm2Gpio();
+    InitEPwm3Gpio();
+    InitEPwm4Gpio();
+
+    //
+    // Step 3. Clear all interrupts and initialize PIE vector table:
+    // Disable CPU interrupts
+    //
+    DINT;
+
+    //
+    // Initialize PIE control registers to their default state.
+    // The default state is all PIE interrupts disabled and flags
+    // are cleared.
+    // This function is found in the DSP2833x_PieCtrl.c file.
+    //
+    InitPieCtrl();
+
+    //
+    // Disable CPU interrupts and clear all CPU interrupt flags:
+    //
+    IER = 0x0000;
+    IFR = 0x0000;
+
+    //
+    // Initialize the PIE vector table with pointers to the shell Interrupt
+    // Service Routines (ISR).
+    // This will populate the entire table, even if the interrupt
+    // is not used in this example.  This is useful for debug purposes.
+    // The shell ISR routines are found in DSP2833x_DefaultIsr.c.
+    // This function is found in DSP2833x_PieVect.c.
+    //
+    InitPieVectTable();
+
+    SetupEPwmTimer();
+
+    InitEncoder();
+
+    Init_adc();
+
+    Init_svpwm();
+
+    Vs = Vdc*0.7071;
 
 
     /************************************
@@ -380,144 +276,37 @@ void init_reg()
      ************************************/
     pi_id.Kp = kp_id;
     pi_id.Ki = ki_id;
+    pi_id.Umax = Vs;
+    pi_id.Umin = -Vs;
 
     pi_iq.Kp = kp_iq;
     pi_iq.Ki = ki_iq;
+    pi_iq.Umax = Vs;
+    pi_iq.Umin = -Vs;
 
     pi_w.Kp = kp_w;
     pi_w.Ki = ki_w;
+    pi_w.Umax = 10;
+    pi_w.Umin = -10;
 
     /******************
      *  END OF BLOCK  *
      ******************/
 
-
-    /******************************
-     *    PWM INITIALIZER BLOCK   *
-     ******************************/
-
-    //set the PWM params here
-    //set channel numbers
-    pwmgen.PeriodMax=7500;
-    pwmgen.HalfPerMax=pwmgen.PeriodMax/2;
-    pwmgen.Deadband=200;
-    PWM_INIT_MACRO(2,3,4,pwmgen);
-
-    /******************
-     *  END OF BLOCK  *
-     ******************/
-
-
-    /**********************************
-     *    DATA AQ INITIALIZER BLOCK   *
-     **********************************/
-
-    //set channel and pin numbers, trig and acqpssel
-    //ChSel[1] = 1;
-    //ChSel[2] = 9;
-    //ChSel[7] = 10;
-    //ACQPS[0] = 1;
-    //ADC_MACRO_INIT(ChSel,TrigSel,ACQPS);
-
-    /******************
-     *  END OF BLOCK  *
-     ******************/
-
-
-    /****************************************
-     *    EKF CONSTANTS INITIALIZER BLOCK   *
-     ****************************************/
-
-    Rs_Ld = _IQdiv(_IQmpy(Rs,T_step),Ld);
-    Rs_Lq = _IQdiv(_IQmpy(Rs,T_step),Lq);
-    B_J = _IQdiv(_IQmpy(J,T_step),J);
-    pxLd_Lq = _IQmpy(_IQmpy(_IQdiv(Ld,Lq),p),T_step);
-    pxLq_Ld = _IQmpy(_IQmpy(_IQdiv(Lq,Ld),p),T_step);
-    pxLdLq_J = _IQdiv(_IQmpy(_IQmpy(_IQ(1.5),_IQmpy(p,T_step)),(Ld-Lq)),J);
-    u_J = _IQdiv(_IQ(1),J);
-    pT = _IQmpy(p,T_step);
-    T_Ld = _IQdiv(T_step,Ld);
-    T_Lq = _IQdiv(T_step,Lq);
 
 
 }
 
-/********************************
- *      SIGNAL ACQUISITION      *
- ********************************/
-void signal_acq()
+float min(float a, float b)
 {
-    i_a = AdcMirror.ADCRESULT0;
-    i_b = AdcMirror.ADCRESULT1;
-    w_e = AdcMirror.ADCRESULT2;
-
-    c1.As = i_a;
-    c1.Bs = i_b;
-    CLARKE_MACRO(c1);
-    i_al = c1.Alpha;
-    i_be = c1.Beta;
+    return a>b?b:a;
 }
 
-
-/********************************
- *     PARAMETER ESTIMATION     *
- ********************************/
-void ekf()
+float max(float a, float b)
 {
-    A[0][0] = _IQ(1) - Rs_Ld;
-    A[0][1] = _IQmpy(pxLq_Ld,X[2]);
-    A[0][2] = _IQmpy(pxLq_Ld,X[1]);
-    A[0][3] = _IQ(0); A[0][4] = _IQ(0);
-    A[1][0] = -_IQmpy(pxLd_Lq,X[2]);
-    A[1][1] = _IQ(1)-Rs_Lq;
-    A[1][2] = -_IQmpy(pxLd_Lq,X[0]);
-    A[1][3] = _IQ(0); A[1][4] = _IQ(0);
-    A[2][0] = _IQmpy(pxLdLq_J,X[1]);
-    A[2][1] = _IQmpy(pxLdLq_J,X[0]);
-    A[2][2] = _IQ(1) - _IQmpy(B_J,sgn(X[2]));
-    A[2][3] = _IQ(0); A[2][4] = u_J;
-    A[3][0] = _IQ(0); A[3][1] = _IQ(0);
-    A[3][2] = pT; A[3][3] = _IQ(1);
-    A[3][4] = _IQ(0);
-    A[4][0] = _IQ(0); A[4][1] = _IQ(0); A[4][2] = _IQ(0); A[4][3] = _IQ(0);
-    A[4][4] = _IQ(1);
-
-    X_o[0] = _IQmpy(_IQmpy(X[1],pxLq_Ld),X[2]) - _IQmpy(Rs_Ld,X[0]) + _IQmpy(v_d,T_Ld) + X[0];
-    X_o[1] = _IQmpy(v_q,T_Lq) - _IQmpy(_IQmpy(X[0],pxLq_Ld),X[2]) - _IQmpy(Rs_Lq,X[1]) + X[1];
-    X_o[2] = _IQmpy(pxLdLq_J,_IQmpy(X[0],X[1])) - _IQmpy(B_J,abs(X[2])) - _IQmpy(u_J,X[4]) + X[2];
-    X_o[3] = _IQmpy(pT,X[2]) + X[3];
-
-    getP_predict();
-
-    C[0][0] = _IQcos(X_o[3]);
-    C[0][1] = -_IQsin(X_o[3]);
-    C[0][2] = _IQ(0); C[0][3] = _IQ(0); C[0][4] = _IQ(0);
-    C[1][0] = _IQsin(X_o[3]);
-    C[1][1] = _IQcos(X_o[3]);
-    C[1][2] = _IQ(0); C[1][3] = _IQ(0); C[1][4] = _IQ(0);
-
-    Y[0] = _IQmpy(X_o[0],C[0][0]) + _IQmpy(X_o[1],C[0][1]);
-    Y[1] = _IQmpy(X_o[0],C[1][0]) + _IQmpy(X_o[1],C[1][1]);
-
-    getK();
-
-    X[0] = _IQmpy(K[0][0],(i_al-Y[0])) + _IQmpy(K[0][1],(i_be-Y[1])) + X_o[0];
-    X[1] = _IQmpy(K[1][0],(i_al-Y[0])) + _IQmpy(K[1][1],(i_be-Y[1])) + X_o[1];
-    X[2] = _IQmpy(K[2][0],(i_al-Y[0])) + _IQmpy(K[2][1],(i_be-Y[1])) + X_o[2];
-    X[3] = _IQmpy(K[3][0],(i_al-Y[0])) + _IQmpy(K[3][1],(i_be-Y[1])) + X_o[3];
-    X[4] = _IQmpy(K[4][0],(i_al-Y[0])) + _IQmpy(K[4][1],(i_be-Y[1])) + X[4];
-
-    id = X[0];
-    iq = X[1];
-    w_e = X[2];
-    angle = X[3];
-    Tl_est = X[4];
-
-    angle_sin=_IQsin(angle);
-    angle_cos=_IQcos(angle);
-
-    getP_correct();
+    return a>b?a:b;
 }
+
 
 /************************************
  *        PI CONTROLLER BLOCK       *
@@ -528,7 +317,9 @@ void pi_controller()
     pi_id.Ref = id_ref;
     pi_id.Fbk = id;
     PI_MACRO(pi_id);
-    v_d = pi_id.Out - _IQmpy(_IQmpy(iq,w_e),_IQ(Lq));
+    vd = (pi_id.Out - iq*w_e*Lq)/Vs;
+    vd = min(vd,1.0);
+    vd = max(vd,-1.0);
 
     //pi_we
     pi_w.Ref = w_e_ref;
@@ -536,10 +327,12 @@ void pi_controller()
     PI_MACRO(pi_w);
 
     //pi_iq
-    pi_iq.Ref = _IQmpy((pi_w.Out+Tl_est),w_mult);
+    pi_iq.Ref = (pi_w.Out+Tl_est)*w_mult;
     pi_iq.Fbk = iq;
     PI_MACRO(pi_iq);
-    v_q = pi_iq.Out + _IQmpy(_IQmpy(id,w_e),_IQ(Ld));
+    vq = (pi_iq.Out + id*w_e*Ld)/Vs;
+    vq = min(vq,1.0);
+    vq = max(vq,-1.0);
 
 }
 
@@ -547,13 +340,13 @@ void pi_controller()
 /**************************
  *   INVERSE PARK BLOCK   *
  **************************/
-void inv_park()
+void inv_park(float a)
 {
     //inv_park
-    ip_v.Ds=v_d;
-    ip_v.Qs=v_q;
-    ip_v.Sine=angle_sin;
-    ip_v.Cosine=angle_cos;
+    ip_v.Ds=vd;
+    ip_v.Qs=vq;
+    ip_v.Sine=sin(a);
+    ip_v.Cosine=cos(a);
     IPARK_MACRO(ip_v);
     v_al = ip_v.Alpha;
     v_be = ip_v.Beta;
@@ -564,34 +357,123 @@ void inv_park()
  *   SVPWM GENERATOR BLOCK   *
  *****************************/
 
-void svpwm_gen()
+void sv_pwm()
 {
-    sv.Ualpha=_IQ(0);
-    sv.Ubeta=_IQ(1);
+    sv.Ualpha = v_al;
+    sv.Ubeta = v_be;
     SVGENDQ_MACRO(sv);
 
-    pwmgen.MfuncC1=_IQ(0);//sv.Ta;
-    pwmgen.MfuncC2=_IQ(1);//sv.Tb;
-    pwmgen.MfuncC3=_IQ(-1);//sv.Tc;
+    pwmgen.MfuncC1=sv.Ta;
+    pwmgen.MfuncC2=sv.Tb;
+    pwmgen.MfuncC3=sv.Tc;
 
     PWM_MACRO(2,3,4,pwmgen);
 }
 
+void ref()
+{
+    w_e_ref += 0.00001;
+    w_e_ref = min(w_e_ref,30.0);
+}
+
+void get_speed()
+{
+    w = PI*10000.0/(float)(EPwm1TimerIntCount);
+    w_rpm = 300000.0/(float)(EPwm1TimerIntCount);
+    w_e = p*w;
+    EPwm1TimerIntCount = 0;
+}
+
+void signal_acq(float a)
+{
+
+    i_a = ((AdcMirror.ADCRESULT0-offA)*0.00073242)*(-20);
+    i_b = ((AdcMirror.ADCRESULT1-offB)*0.00073242)*(-20);
+
+    c1.As = i_a;
+    c1.Bs = i_b;
+    CLARKE_MACRO(c1);
+    i_a = c1.Alpha;
+    i_b = c1.Beta;
+
+    p1.Alpha = i_a;
+    p1.Beta = i_b;
+    p1.Cosine = cos(a);
+    p1.Sine = sin(a);
+    PARK_MACRO(p1);
+
+    id = p1.Ds;
+    iq = p1.Qs;
+}
 
 
 int main(void)
 {
     init_reg();
 
-    //signal_acq();
+    for(;;)
+    {
+    }
+}
 
-    //ekf();
+__interrupt void
+epwm1_timer_isr(void)
+{
+    EPwm1TimerIntCount++;
+    //s?(GpioDataRegs.GPASET.bit.GPIO8=1):(GpioDataRegs.GPACLEAR.bit.GPIO8=1);
+    //s = 1-s;
+    if(i>THRESH)
+    {
+        ref();
+        int sn = GpioDataRegs.GPADAT.bit.GPIO9;
+        if(s!=sn)
+        {
+            s = sn;
+            get_speed();
+        }
 
-    //pi_controller();
+        signal_acq(a);
 
-    //inv_park();
+        a = (float)get_angle();
+        a = (a-188.0)*(p);
+        a = a*2.0*PI/1024.0;
 
-    svpwm_gen();
+//        angle = angle+(PI*freq_e/5000.0);
+//        if(angle>2*PI)
+//        {
+//            angle = angle - (2*PI);
+//        }
+//
+//        if(a>2*PI)
+//        {
+//            a = a - (2*PI);
+//        }
+//        if(a<0)
+//        {
+//            a = a + (2*PI);
+//        }
+//
+//        v_al = cos(a+PI2);
+//        v_be = sin(a+PI2);
 
-    return 0;
+        pi_controller();
+
+        inv_park(a);
+
+        sv_pwm();
+    }
+    else
+    {
+        setOffset(i++);
+    }
+
+    //
+    // Clear INT flag for this timer
+    //
+    EPwm1Regs.ETCLR.bit.INT = 1;
+
+    //
+    // Acknowledge this interrupt to receive more interrupts from group 3
+    //
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
 }
