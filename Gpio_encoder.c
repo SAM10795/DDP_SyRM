@@ -9,6 +9,9 @@
 #include "DSP2833x_Examples.h"
 #include "IQmathLib.h"
 
+#define PI 3.141592654
+
+extern float p;
 
 void InitEncoder(void)
 {
@@ -73,7 +76,7 @@ unsigned int GTB(unsigned int num)
     return (num+1);
 }
 
-unsigned int get_angle(void)
+float get_angle(void)
 {
     unsigned int ot = (1-GpioDataRegs.GPBDAT.bit.GPIO60)+
                     ((1-GpioDataRegs.GPBDAT.bit.GPIO61)<<1)+
@@ -86,5 +89,17 @@ unsigned int get_angle(void)
                     ((1-GpioDataRegs.GPADAT.bit.GPIO10)<<8)+
                     ((1-GpioDataRegs.GPADAT.bit.GPIO9)<<9);
 
-    return GTB(ot);
+    ot = GTB(ot);
+    float a = (float)ot;
+    a = (a-188.0)*(p);
+    a = a*2.0*PI/1024.0;
+    if(a>2*PI)
+    {
+        a = a - (2*PI);
+    }
+    if(a<0)
+    {
+        a = a + (2*PI);
+    }
+    return a;
 }

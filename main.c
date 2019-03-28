@@ -10,8 +10,7 @@ long GlobalQ = GLOBAL_Q;      // Used for legacy GEL & Graph Debug.
 #include "ipark.h"
 #include "pi.h"
 #include "Gpio_encoder.h"
-#include "svgen.h"
-#include "f2833xpwm.h"
+#include "sv_gen.h"
 #include "f2833xileg_vdc.h"
 
 // Define constants used:
@@ -21,6 +20,7 @@ long GlobalQ = GLOBAL_Q;      // Used for legacy GEL & Graph Debug.
 #define SQRT32 0.8660254
 #define STEP_SIZE 0.0314159265
 #define ANGLE_CONV 0.00613592315
+#define  ONEbySQRT3   0.57735026918963    /* 1/sqrt(3) */
 
 #define PWM1_INT_ENABLE 1
 #define PWM1_TIMER_TBPRD 0x1D4B //1D4B => 7499 => 10kHz
@@ -30,8 +30,8 @@ long GlobalQ = GLOBAL_Q;      // Used for legacy GEL & Graph Debug.
 
 #define THRESH 10000
 
-SVGEN sv=SVGEN_DEFAULTS;
-PWMGEN pwmgen = PWMGEN_DEFAULTS;
+//SVGEN sv=SVGEN_DEFAULTS;
+//PWMGEN pwmgen = PWMGEN_DEFAULTS;
 
 CLARKE c1;
 PARK p1;
@@ -40,36 +40,45 @@ int ChSel[16] = {0};
 int ACQPS[16] = {0};
 int TrigSel[16] = {0};
 
+int iter_count=0;
+
 float offA = 0.0;
 float offB = 0.0;
 
-float i_a = 0;
-float i_b = 0;
+float ia_in[3] = {0.0,0.0,0.0};
+float ib_in[3] = {0.0,0.0,0.0};
+
+float i_a[3] = {0.0,0.0,0.0};
+float i_b[3] = {0.0,0.0,0.0};
+
+float test = 0;
 
 unsigned int i =0;
 
 //Define Machine constants
 float Lq = 0.35;
-float Ld = 0.2;
+float Ld = 0.086;
 float Rs = 1.3;
 float p = 2;    //pole pairs
 float T_step = 0.0001;
-float J = 0.005;
-float B = 0.0005;
+float J = 0.068;
+float B = 0.00675;
 
-float Vdc = 48.6;
+float Vdc = 25;
 float Vs = 0.0;
 
 IPARK ip_v;
 
-float a = 0.0;
+float a[3] = {0.0,0.0,0.0};
 float w = 0.0;
 float w_rpm = 0.0;
 int s = 0;
 
+int sign = 0;
+
 float angle = 0.0;
 
-float freq_e = 1;
+float freq_e = 2;
 
 //PI controller variables
 
@@ -77,19 +86,19 @@ PI_CONTROLLER pi_id=PI_CONTROLLER_DEFAULTS;
 PI_CONTROLLER pi_iq=PI_CONTROLLER_DEFAULTS;
 PI_CONTROLLER pi_w=PI_CONTROLLER_DEFAULTS;
 
-float kp_id=2.20;
-float kp_iq=1.2570;
-float kp_w=0.30;
-float ki_id=8.168;
-float ki_iq=8.168;
-float ki_w=0.10;
+float kp_id=2200.0;
+float kp_iq=540.0;
+float kp_w=10;
+float ki_id=0.0004;
+float ki_iq=0.0015;
+float ki_w=0.00001;
 
 float id_max=5;
 float iq_max=5;
-float w_max=500;
+float w_max=50;
 float id_min=-5;
 float iq_min=-5;
-float w_min=-500;
+float w_min=-50;
 
 //PI controller variables end
 
@@ -114,7 +123,7 @@ float Tl_est=0;
 
 //Reference variables
 
-float id_ref = 1.0;    //Id reference
+float id_ref = 0.5;    //Id reference
 float w_e_ref = 0;     //Omega_electrical reference
 
 //Reference variables end
@@ -182,19 +191,19 @@ SetupEPwmTimer(void)
 }
 
 
-void Init_svpwm()
-{
-    pwmgen.PeriodMax=7500;
-    pwmgen.HalfPerMax=pwmgen.PeriodMax/2;
-    pwmgen.Deadband=200;
-    PWM_INIT_MACRO(2,3,4,pwmgen);
-}
+//void Init_svpwm()
+//{
+//    pwmgen.PeriodMax=7500;
+//    pwmgen.HalfPerMax=pwmgen.PeriodMax/2;
+//    pwmgen.Deadband=200;
+//    PWM_INIT_MACRO(2,3,4,pwmgen);
+//}
 
 void Init_adc()
 {
     ChSel[0] = 4;
     ChSel[1] = 5;
-    ACQPS[0] = 1;
+    ACQPS[0] = 4;
     ADC_MACRO_INIT(ChSel,TrigSel,ACQPS);
 }
 
@@ -268,7 +277,7 @@ void init_reg()
 
     Init_svpwm();
 
-    Vs = Vdc*0.7071;
+    Vs = Vdc*ONEbySQRT3;
 
 
     /************************************
@@ -318,8 +327,6 @@ void pi_controller()
     pi_id.Fbk = id;
     PI_MACRO(pi_id);
     vd = (pi_id.Out - iq*w_e*Lq)/Vs;
-    vd = min(vd,1.0);
-    vd = max(vd,-1.0);
 
     //pi_we
     pi_w.Ref = w_e_ref;
@@ -327,12 +334,11 @@ void pi_controller()
     PI_MACRO(pi_w);
 
     //pi_iq
-    pi_iq.Ref = (pi_w.Out+Tl_est)*w_mult;
+    pi_iq.Ref = (pi_w.Out+Tl_est);//*w_mult;
     pi_iq.Fbk = iq;
     PI_MACRO(pi_iq);
     vq = (pi_iq.Out + id*w_e*Ld)/Vs;
-    vq = min(vq,1.0);
-    vq = max(vq,-1.0);
+    //vd = min(sqrt(Vs*Vs - vq*vq),vd);
 
 }
 
@@ -357,47 +363,77 @@ void inv_park(float a)
  *   SVPWM GENERATOR BLOCK   *
  *****************************/
 
-void sv_pwm()
-{
-    sv.Ualpha = v_al;
-    sv.Ubeta = v_be;
-    SVGENDQ_MACRO(sv);
-
-    pwmgen.MfuncC1=sv.Ta;
-    pwmgen.MfuncC2=sv.Tb;
-    pwmgen.MfuncC3=sv.Tc;
-
-    PWM_MACRO(2,3,4,pwmgen);
-}
+//void sv_pwm()
+//{
+//    sv.Ualpha = v_al;
+//    sv.Ubeta = v_be;
+//    SVGENDQ_MACRO(sv);
+//
+//    pwmgen.MfuncC1=sv.Ta;
+//    pwmgen.MfuncC2=sv.Tb;
+//    pwmgen.MfuncC3=sv.Tc;
+//
+//    PWM_MACRO(2,3,4,pwmgen);
+//}
 
 void ref()
 {
-    w_e_ref += 0.00001;
-    w_e_ref = min(w_e_ref,30.0);
+    w_e_ref += 0.0001;
+    w_e_ref = min(w_e_ref,20.0);
 }
 
 void get_speed()
 {
-    w = PI*10000.0/(float)(EPwm1TimerIntCount);
-    w_rpm = 300000.0/(float)(EPwm1TimerIntCount);
+    if(a[0] > a[1] && (a[0]-a[1])<PI)
+    {
+        sign = 1;
+    }
+    else if(a[0] < a[1] && (a[1]-a[0])<PI)
+    {
+        sign = -1;
+    }
+    else if((a[0]-a[1])>PI||(a[1]-a[0])>PI)
+    {
+        sign = ((a[1]>a[2])?-1:1);
+    }
+    else if(a[0]==a[1]&&a[1]==a[2])
+    {
+        sign = 0;w = 0;
+    }
+    w = sign*PI*1250.0/(float)(EPwm1TimerIntCount);
+    w_rpm = sign*37500.0/(float)(EPwm1TimerIntCount);
     w_e = p*w;
     EPwm1TimerIntCount = 0;
 }
 
 void signal_acq(float a)
 {
+    ia_in[2] = ia_in[1];
+    ib_in[2] = ib_in[1];
+    i_a[2] = i_a[1];
+    i_b[2] = i_b[1];
+    ia_in[1] = ia_in[0];
+    ib_in[1] = ib_in[0];
+    i_a[1] = i_a[0];
+    i_b[1] = i_b[0];
 
-    i_a = ((AdcMirror.ADCRESULT0-offA)*0.00073242)*(-20);
-    i_b = ((AdcMirror.ADCRESULT1-offB)*0.00073242)*(-20);
+    ia_in[0] = ((AdcMirror.ADCRESULT0-offA)*0.00073242)*(22.22);
+    ib_in[0] = ((AdcMirror.ADCRESULT1-offB)*0.00073242)*(22.22);
 
-    c1.As = i_a;
-    c1.Bs = i_b;
+    i_a[0] = ia_in[0];
+    i_b[0] = ib_in[0];
+
+    //i_a[0] = 1.4514*i_a[1] - 0.5724*i_a[2] + 0.0302*(ia_in[0] + ia_in[2]) + 0.0605*ia_in[1];
+    //i_b[0] = 1.4514*i_b[1] - 0.5724*i_b[2] + 0.0302*(ib_in[0] + ib_in[2]) + 0.0605*ib_in[1];
+
+    c1.As = i_a[0];
+    c1.Bs = i_b[0];
     CLARKE_MACRO(c1);
-    i_a = c1.Alpha;
-    i_b = c1.Beta;
+    i_a[0] = c1.Alpha;
+    i_b[0] = c1.Beta;
 
-    p1.Alpha = i_a;
-    p1.Beta = i_b;
+    p1.Alpha = i_a[0];
+    p1.Beta = i_b[0];
     p1.Cosine = cos(a);
     p1.Sine = sin(a);
     PARK_MACRO(p1);
@@ -424,43 +460,40 @@ epwm1_timer_isr(void)
     //s = 1-s;
     if(i>THRESH)
     {
+        iter_count++;
         ref();
-        int sn = GpioDataRegs.GPADAT.bit.GPIO9;
-        if(s!=sn)
+        int sn = GpioDataRegs.GPADAT.bit.GPIO25;
+        if(s!=sn || EPwm1TimerIntCount>10000)
         {
             s = sn;
             get_speed();
         }
 
-        signal_acq(a);
+        a[0] = get_angle();
 
-        a = (float)get_angle();
-        a = (a-188.0)*(p);
-        a = a*2.0*PI/1024.0;
+        signal_acq(a[0]);
 
-//        angle = angle+(PI*freq_e/5000.0);
-//        if(angle>2*PI)
-//        {
-//            angle = angle - (2*PI);
-//        }
-//
-//        if(a>2*PI)
-//        {
-//            a = a - (2*PI);
-//        }
-//        if(a<0)
-//        {
-//            a = a + (2*PI);
-//        }
-//
-//        v_al = cos(a+PI2);
-//        v_be = sin(a+PI2);
+        angle = angle+(PI*2*freq_e/5000.0);
+        if(angle>2*PI)
+        {
+            angle = angle - (2*PI);
+        }
 
-        pi_controller();
+        v_al = cos(angle);
+        v_be = sin(angle);
 
-        inv_park(a);
+        //pi_controller();
 
-        sv_pwm();
+        //inv_park(a[0]);
+
+        sv_pwm(v_al,v_be);
+
+        if(iter_count>=100)
+        {
+            iter_count=0;
+            a[2] = a[1];
+            a[1] = a[0];
+        }
     }
     else
     {

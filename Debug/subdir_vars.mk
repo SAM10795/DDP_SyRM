@@ -22,7 +22,9 @@ C:/ti/C2000Ware_1_00_06_00_Software/device_support/f2833x/common/source/DSP2833x
 C:/ti/C2000Ware_1_00_06_00_Software/device_support/f2833x/common/source/DSP2833x_SysCtrl.c \
 ../Gpio_encoder.c \
 ../ekf_cal.c \
-../main.c 
+../i_adc.c \
+../main.c \
+../sv_gen.c 
 
 C_DEPS += \
 ./DSP2833x_DefaultIsr.d \
@@ -33,7 +35,9 @@ C_DEPS += \
 ./DSP2833x_SysCtrl.d \
 ./Gpio_encoder.d \
 ./ekf_cal.d \
-./main.d 
+./i_adc.d \
+./main.d \
+./sv_gen.d 
 
 OBJS += \
 ./DSP2833x_ADC_cal.obj \
@@ -47,7 +51,9 @@ OBJS += \
 ./DSP2833x_usDelay.obj \
 ./Gpio_encoder.obj \
 ./ekf_cal.obj \
-./main.obj 
+./i_adc.obj \
+./main.obj \
+./sv_gen.obj 
 
 ASM_DEPS += \
 ./DSP2833x_ADC_cal.d \
@@ -66,7 +72,9 @@ OBJS__QUOTED += \
 "DSP2833x_usDelay.obj" \
 "Gpio_encoder.obj" \
 "ekf_cal.obj" \
-"main.obj" 
+"i_adc.obj" \
+"main.obj" \
+"sv_gen.obj" 
 
 C_DEPS__QUOTED += \
 "DSP2833x_DefaultIsr.d" \
@@ -77,7 +85,9 @@ C_DEPS__QUOTED += \
 "DSP2833x_SysCtrl.d" \
 "Gpio_encoder.d" \
 "ekf_cal.d" \
-"main.d" 
+"i_adc.d" \
+"main.d" \
+"sv_gen.d" 
 
 ASM_DEPS__QUOTED += \
 "DSP2833x_ADC_cal.d" \
@@ -98,6 +108,8 @@ C_SRCS__QUOTED += \
 "C:/ti/C2000Ware_1_00_06_00_Software/device_support/f2833x/common/source/DSP2833x_SysCtrl.c" \
 "../Gpio_encoder.c" \
 "../ekf_cal.c" \
-"../main.c" 
+"../i_adc.c" \
+"../main.c" \
+"../sv_gen.c" 
 
 

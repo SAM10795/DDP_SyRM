@@ -41,10 +41,7 @@ main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/park.h
 main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/ipark.h
 main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/pi.h
 main.obj: ../Gpio_encoder.h
-main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/svgen.h
-main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/drivers/f2833x_v2.0/f2833xpwm.h
-main.obj: C:/ti/controlSUITE/development_kits/~SupportFiles/F2833x_headers/f2833xbmsk.h
-main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/drivers/f2833x_v2.0/f2833xdrvlib.h
+main.obj: ../sv_gen.h
 main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/drivers/f2833x_v2.0/f2833xileg_vdc.h
 
 ../main.c: 
@@ -88,8 +85,5 @@ C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/park.h:
 C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/ipark.h: 
 C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/pi.h: 
 ../Gpio_encoder.h: 
-C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/svgen.h: 
-C:/ti/controlSUITE/libs/app_libs/motor_control/drivers/f2833x_v2.0/f2833xpwm.h: 
-C:/ti/controlSUITE/development_kits/~SupportFiles/F2833x_headers/f2833xbmsk.h: 
-C:/ti/controlSUITE/libs/app_libs/motor_control/drivers/f2833x_v2.0/f2833xdrvlib.h: 
+../sv_gen.h: 
 C:/ti/controlSUITE/libs/app_libs/motor_control/drivers/f2833x_v2.0/f2833xileg_vdc.h: 

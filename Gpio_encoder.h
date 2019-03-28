@@ -10,7 +10,7 @@
 
 
 void InitEncoder(void);
-unsigned int get_angle(void);
+float get_angle(void);
 
 
 #endif /* GPIO_ENCODER_H_ */

@@ -21,7 +21,9 @@ ORDERED_OBJS += \
 "./DSP2833x_usDelay.obj" \
 "./Gpio_encoder.obj" \
 "./ekf_cal.obj" \
+"./i_adc.obj" \
 "./main.obj" \
+"./sv_gen.obj" \
 "../28335_RAM_lnk.cmd" \
 $(GEN_CMDS__FLAG) \
 -l"C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_headers/cmd/DSP2833x_Headers_nonBIOS.cmd" \
@@ -165,8 +167,8 @@ DDP_Motor.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(BIN_OUTPUTS__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "DSP2833x_ADC_cal.obj" "DSP2833x_CodeStartBranch.obj" "DSP2833x_DefaultIsr.obj" "DSP2833x_EPwm.obj" "DSP2833x_GlobalVariableDefs.obj" "DSP2833x_PieCtrl.obj" "DSP2833x_PieVect.obj" "DSP2833x_SysCtrl.obj" "DSP2833x_usDelay.obj" "Gpio_encoder.obj" "ekf_cal.obj" "main.obj" 
-	-$(RM) "DSP2833x_DefaultIsr.d" "DSP2833x_EPwm.d" "DSP2833x_GlobalVariableDefs.d" "DSP2833x_PieCtrl.d" "DSP2833x_PieVect.d" "DSP2833x_SysCtrl.d" "Gpio_encoder.d" "ekf_cal.d" "main.d" 
+	-$(RM) "DSP2833x_ADC_cal.obj" "DSP2833x_CodeStartBranch.obj" "DSP2833x_DefaultIsr.obj" "DSP2833x_EPwm.obj" "DSP2833x_GlobalVariableDefs.obj" "DSP2833x_PieCtrl.obj" "DSP2833x_PieVect.obj" "DSP2833x_SysCtrl.obj" "DSP2833x_usDelay.obj" "Gpio_encoder.obj" "ekf_cal.obj" "i_adc.obj" "main.obj" "sv_gen.obj" 
+	-$(RM) "DSP2833x_DefaultIsr.d" "DSP2833x_EPwm.d" "DSP2833x_GlobalVariableDefs.d" "DSP2833x_PieCtrl.d" "DSP2833x_PieVect.d" "DSP2833x_SysCtrl.d" "Gpio_encoder.d" "ekf_cal.d" "i_adc.d" "main.d" "sv_gen.d" 
 	-$(RM) "DSP2833x_ADC_cal.d" "DSP2833x_CodeStartBranch.d" "DSP2833x_usDelay.d" 
 	-@echo 'Finished clean'
 	-@echo ' '
