@@ -1,9 +1,9 @@
 # FIXED
 
 main.obj: ../main.c
-main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/stdio.h
+main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/time.h
 main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/linkage.h
-main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/stdarg.h
+main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/abi_prefix.h
 main.obj: C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_common/include/DSP28x_Project.h
 main.obj: C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_headers/include/DSP2833x_Device.h
 main.obj: C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_headers/include/DSP2833x_Adc.h
@@ -41,13 +41,16 @@ main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/park.h
 main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/ipark.h
 main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/pi.h
 main.obj: ../Gpio_encoder.h
-main.obj: ../sv_gen.h
 main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/drivers/f2833x_v2.0/f2833xileg_vdc.h
+main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/svgen.h
+main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/drivers/f2833x_v2.0/f2833xpwm.h
+main.obj: C:/ti/controlSUITE/development_kits/~SupportFiles/F2833x_headers/f2833xbmsk.h
+main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/drivers/f2833x_v2.0/f2833xdrvlib.h
 
 ../main.c: 
-C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/stdio.h: 
+C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/time.h: 
 C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/linkage.h: 
-C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/stdarg.h: 
+C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/abi_prefix.h: 
 C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_common/include/DSP28x_Project.h: 
 C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_headers/include/DSP2833x_Device.h: 
 C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_headers/include/DSP2833x_Adc.h: 
@@ -85,5 +88,8 @@ C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/park.h:
 C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/ipark.h: 
 C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/pi.h: 
 ../Gpio_encoder.h: 
-../sv_gen.h: 
 C:/ti/controlSUITE/libs/app_libs/motor_control/drivers/f2833x_v2.0/f2833xileg_vdc.h: 
+C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/svgen.h: 
+C:/ti/controlSUITE/libs/app_libs/motor_control/drivers/f2833x_v2.0/f2833xpwm.h: 
+C:/ti/controlSUITE/development_kits/~SupportFiles/F2833x_headers/f2833xbmsk.h: 
+C:/ti/controlSUITE/libs/app_libs/motor_control/drivers/f2833x_v2.0/f2833xdrvlib.h: 

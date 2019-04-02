@@ -2,7 +2,7 @@
 long GlobalQ = GLOBAL_Q;      // Used for legacy GEL & Graph Debug.
 #define MATH_TYPE FLOAT_MATH
 
-#include <stdio.h>
+#include <time.h>
 #include "DSP28x_Project.h"     // Device Headerfile and Examples Include File
 #include "IQmathLib.h"
 #include "clarke.h"
@@ -10,8 +10,12 @@ long GlobalQ = GLOBAL_Q;      // Used for legacy GEL & Graph Debug.
 #include "ipark.h"
 #include "pi.h"
 #include "Gpio_encoder.h"
-#include "sv_gen.h"
+//#include "sv_gen.h"
 #include "f2833xileg_vdc.h"
+//#include "f2833xpwmdac.h"
+#include "svgen.h"
+#include "f2833xpwm.h"
+
 
 // Define constants used:
 #define PI2 1.570796327
@@ -30,8 +34,10 @@ long GlobalQ = GLOBAL_Q;      // Used for legacy GEL & Graph Debug.
 
 #define THRESH 10000
 
-//SVGEN sv=SVGEN_DEFAULTS;
-//PWMGEN pwmgen = PWMGEN_DEFAULTS;
+SVGEN sv=SVGEN_DEFAULTS;
+PWMGEN pwmgen = PWMGEN_DEFAULTS;
+
+//PWMDAC pwmdac=PWMDAC_DEFAULTS;
 
 CLARKE c1;
 PARK p1;
@@ -64,7 +70,7 @@ float T_step = 0.0001;
 float J = 0.068;
 float B = 0.00675;
 
-float Vdc = 25;
+float Vdc = 105;
 float Vs = 0.0;
 
 IPARK ip_v;
@@ -78,7 +84,7 @@ int sign = 0;
 
 float angle = 0.0;
 
-float freq_e = 2;
+float freq_e = 1;
 
 //PI controller variables
 
@@ -87,11 +93,11 @@ PI_CONTROLLER pi_iq=PI_CONTROLLER_DEFAULTS;
 PI_CONTROLLER pi_w=PI_CONTROLLER_DEFAULTS;
 
 float kp_id=2200.0;
-float kp_iq=540.0;
-float kp_w=10;
+float kp_iq=1.0;//540.0;
+float kp_w=31.0;
 float ki_id=0.0004;
-float ki_iq=0.0015;
-float ki_w=0.00001;
+float ki_iq=0.00001;//0.0015;
+float ki_w=0.0001;
 
 float id_max=5;
 float iq_max=5;
@@ -121,10 +127,12 @@ float Tl_est=0;
 
 //Estimated variables end
 
+clock_t st;
+
 //Reference variables
 
-float id_ref = 0.5;    //Id reference
-float w_e_ref = 0;     //Omega_electrical reference
+float id_ref = 1.0;    //Id reference
+float w_ref = 0;     //Omega_electrical reference
 
 //Reference variables end
 
@@ -191,13 +199,13 @@ SetupEPwmTimer(void)
 }
 
 
-//void Init_svpwm()
-//{
-//    pwmgen.PeriodMax=7500;
-//    pwmgen.HalfPerMax=pwmgen.PeriodMax/2;
-//    pwmgen.Deadband=200;
-//    PWM_INIT_MACRO(2,3,4,pwmgen);
-//}
+void Init_svpwm()
+{
+    pwmgen.PeriodMax=7500;
+    pwmgen.HalfPerMax=pwmgen.PeriodMax/2;
+    pwmgen.Deadband=200;
+    PWM_INIT_MACRO(2,3,4,pwmgen);
+}
 
 void Init_adc()
 {
@@ -238,6 +246,7 @@ void init_reg()
     InitEPwm2Gpio();
     InitEPwm3Gpio();
     InitEPwm4Gpio();
+    //InitEPwm5Gpio();
 
     //
     // Step 3. Clear all interrupts and initialize PIE vector table:
@@ -271,6 +280,8 @@ void init_reg()
 
     SetupEPwmTimer();
 
+    //PWMDAC_INIT_MACRO(5,pwmdac);
+
     InitEncoder();
 
     Init_adc();
@@ -302,8 +313,6 @@ void init_reg()
      *  END OF BLOCK  *
      ******************/
 
-
-
 }
 
 float min(float a, float b)
@@ -329,8 +338,8 @@ void pi_controller()
     vd = (pi_id.Out - iq*w_e*Lq)/Vs;
 
     //pi_we
-    pi_w.Ref = w_e_ref;
-    pi_w.Fbk = w_e;
+    pi_w.Ref = w_ref;
+    pi_w.Fbk = w;
     PI_MACRO(pi_w);
 
     //pi_iq
@@ -363,23 +372,22 @@ void inv_park(float a)
  *   SVPWM GENERATOR BLOCK   *
  *****************************/
 
-//void sv_pwm()
-//{
-//    sv.Ualpha = v_al;
-//    sv.Ubeta = v_be;
-//    SVGENDQ_MACRO(sv);
-//
-//    pwmgen.MfuncC1=sv.Ta;
-//    pwmgen.MfuncC2=sv.Tb;
-//    pwmgen.MfuncC3=sv.Tc;
-//
-//    PWM_MACRO(2,3,4,pwmgen);
-//}
+void sv_pwm()
+{
+    sv.Ualpha = v_al;
+    sv.Ubeta = v_be;
+    SVGENDQ_MACRO(sv);
+
+    pwmgen.MfuncC1=sv.Ta;
+    pwmgen.MfuncC2=sv.Tb;
+    pwmgen.MfuncC3=sv.Tc;
+
+    PWM_MACRO(2,3,4,pwmgen);
+}
 
 void ref()
 {
-    w_e_ref += 0.0001;
-    w_e_ref = min(w_e_ref,20.0);
+    w_ref = 16;
 }
 
 void get_speed()
@@ -420,6 +428,10 @@ void signal_acq(float a)
     ia_in[0] = ((AdcMirror.ADCRESULT0-offA)*0.00073242)*(22.22);
     ib_in[0] = ((AdcMirror.ADCRESULT1-offB)*0.00073242)*(22.22);
 
+//    test = ia_in[0]/10.0;
+//    pwmdac.MfuncC1 = test;
+//    PWMDAC_MACRO(5,pwmdac);
+
     i_a[0] = ia_in[0];
     i_b[0] = ib_in[0];
 
@@ -449,6 +461,7 @@ int main(void)
 
     for(;;)
     {
+        st = clock();
     }
 }
 
@@ -473,20 +486,21 @@ epwm1_timer_isr(void)
 
         signal_acq(a[0]);
 
-        angle = angle+(PI*2*freq_e/5000.0);
-        if(angle>2*PI)
-        {
-            angle = angle - (2*PI);
-        }
+//        angle = angle+(PI*2*freq_e/5000.0);
+//        if(angle>2*PI)
+//        {
+//            angle = angle - (2*PI);
+//        }
+//
+//        v_al = cos(angle);
+//        v_be = sin(angle);
 
-        v_al = cos(angle);
-        v_be = sin(angle);
+        pi_controller();
 
-        //pi_controller();
+        inv_park(a[0]);
 
-        //inv_park(a[0]);
-
-        sv_pwm(v_al,v_be);
+        //sv_pwm(v_al,v_be);
+        sv_pwm();
 
         if(iter_count>=100)
         {

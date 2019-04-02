@@ -4,7 +4,7 @@
  *  Created on: Mar 22, 2019
  *      Author: SAM10795
 */
-
+/*
 #define MATH_TYPE FLOAT_MATH
 
 #include "DSP28x_Project.h"     // Device Headerfile and Examples Include File
@@ -37,3 +37,4 @@ void sv_pwm(float v_al, float v_be)
     PWM_MACRO(2,3,4,pwmgen);
 }
 
+*/
