@@ -1,9 +1,6 @@
 # FIXED
 
 main.obj: ../main.c
-main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/time.h
-main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/linkage.h
-main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/abi_prefix.h
 main.obj: C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_common/include/DSP28x_Project.h
 main.obj: C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_headers/include/DSP2833x_Device.h
 main.obj: C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_headers/include/DSP2833x_Adc.h
@@ -32,6 +29,7 @@ main.obj: C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_common/include/
 main.obj: C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_common/include/DSP2833x_DefaultIsr.h
 main.obj: C:/ti/controlSUITE/libs/math/IQmath/v15c/include/IQmathLib.h
 main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/math.h
+main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/linkage.h
 main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/_defs.h
 main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/stdlib.h
 main.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/stdlibf.h
@@ -48,9 +46,6 @@ main.obj: C:/ti/controlSUITE/development_kits/~SupportFiles/F2833x_headers/f2833
 main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/drivers/f2833x_v2.0/f2833xdrvlib.h
 
 ../main.c: 
-C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/time.h: 
-C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/linkage.h: 
-C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/abi_prefix.h: 
 C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_common/include/DSP28x_Project.h: 
 C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_headers/include/DSP2833x_Device.h: 
 C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_headers/include/DSP2833x_Adc.h: 
@@ -79,6 +74,7 @@ C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_common/include/DSP2833x_I
 C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_common/include/DSP2833x_DefaultIsr.h: 
 C:/ti/controlSUITE/libs/math/IQmath/v15c/include/IQmathLib.h: 
 C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/math.h: 
+C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/linkage.h: 
 C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/_defs.h: 
 C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/stdlib.h: 
 C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/stdlibf.h: 

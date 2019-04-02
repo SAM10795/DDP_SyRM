@@ -2,7 +2,6 @@
 long GlobalQ = GLOBAL_Q;      // Used for legacy GEL & Graph Debug.
 #define MATH_TYPE FLOAT_MATH
 
-#include <time.h>
 #include "DSP28x_Project.h"     // Device Headerfile and Examples Include File
 #include "IQmathLib.h"
 #include "clarke.h"
@@ -70,7 +69,7 @@ float T_step = 0.0001;
 float J = 0.068;
 float B = 0.00675;
 
-float Vdc = 105;
+float Vdc = 210;
 float Vs = 0.0;
 
 IPARK ip_v;
@@ -93,11 +92,11 @@ PI_CONTROLLER pi_iq=PI_CONTROLLER_DEFAULTS;
 PI_CONTROLLER pi_w=PI_CONTROLLER_DEFAULTS;
 
 float kp_id=2200.0;
-float kp_iq=1.0;//540.0;
-float kp_w=31.0;
+float kp_iq=540.0;
+float kp_w=0.05;
 float ki_id=0.0004;
-float ki_iq=0.00001;//0.0015;
-float ki_w=0.0001;
+float ki_iq=0.0015;
+float ki_w=0.00001;
 
 float id_max=5;
 float iq_max=5;
@@ -127,11 +126,9 @@ float Tl_est=0;
 
 //Estimated variables end
 
-clock_t st;
-
 //Reference variables
 
-float id_ref = 1.0;    //Id reference
+float id_ref = 2.0;    //Id reference
 float w_ref = 0;     //Omega_electrical reference
 
 //Reference variables end
@@ -144,6 +141,7 @@ float w_mult = 0.45;    //1.5*p*(Ld-Lq)/Id_ref to be updated as Id_ref changes
 __interrupt void epwm1_timer_isr(void);
 
 unsigned int EPwm1TimerIntCount;
+unsigned long TimerCount;
 
 void
 InitEPwmTimer(void)
@@ -183,6 +181,7 @@ SetupEPwmTimer(void)
     EDIS;    // This is needed to disable write to EALLOW protected registers
 
     EPwm1TimerIntCount = 0;
+    TimerCount = 0;
 
     InitEPwmTimer();
 
@@ -387,7 +386,15 @@ void sv_pwm()
 
 void ref()
 {
-    w_ref = 16;
+    w_ref = 30;
+    if(TimerCount>400000)
+    {
+        w_ref = -30;
+    }
+    if(TimerCount>800000)
+    {
+        w_ref = 30;
+    }
 }
 
 void get_speed()
@@ -461,13 +468,13 @@ int main(void)
 
     for(;;)
     {
-        st = clock();
     }
 }
 
 __interrupt void
 epwm1_timer_isr(void)
 {
+    TimerCount++;
     EPwm1TimerIntCount++;
     //s?(GpioDataRegs.GPASET.bit.GPIO8=1):(GpioDataRegs.GPACLEAR.bit.GPIO8=1);
     //s = 1-s;
