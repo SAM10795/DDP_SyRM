@@ -46,7 +46,7 @@
 // locations within the memory map                                    */
 
 /* Uncomment this line to include file only for non-BIOS applications */
-/* -l DSP2833x_Headers_nonBIOS.cmd */
+ /* -l DSP2833x_Headers_nonBIOS.cmd	*/
 
 /* Uncomment this line to include file only for BIOS applications */
 /* -l DSP2833x_Headers_BIOS.cmd */

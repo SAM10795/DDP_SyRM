@@ -50,15 +50,26 @@ int iter_count=0;
 float offA = 0.0;
 float offB = 0.0;
 
+float i_a;
+float i_b;
+
 float ia_in[3] = {0.0,0.0,0.0};
 float ib_in[3] = {0.0,0.0,0.0};
 
-float i_a[3] = {0.0,0.0,0.0};
-float i_b[3] = {0.0,0.0,0.0};
+float ia_out[3] = {0.0,0.0,0.0};
+float ib_out[3] = {0.0,0.0,0.0};
 
-float test = 0;
+unsigned int i=0;
 
-unsigned int i =0;
+//Measurements
+int meas = 0;
+int start = 0;
+
+float m_ia[200];
+float m_ib[200];
+float m_id[200];
+float m_iq[200];
+float m_w[200];
 
 //Define Machine constants
 float Lq = 0.35;
@@ -69,7 +80,7 @@ float T_step = 0.0001;
 float J = 0.068;
 float B = 0.00675;
 
-float Vdc = 210;
+float Vdc = 565;
 float Vs = 0.0;
 
 IPARK ip_v;
@@ -91,12 +102,12 @@ PI_CONTROLLER pi_id=PI_CONTROLLER_DEFAULTS;
 PI_CONTROLLER pi_iq=PI_CONTROLLER_DEFAULTS;
 PI_CONTROLLER pi_w=PI_CONTROLLER_DEFAULTS;
 
-float kp_id=2200.0;
-float kp_iq=540.0;
-float kp_w=0.05;
-float ki_id=0.0004;
+float kp_id=22.0;//2200.0
+float kp_iq=54.0;//540.0;
+float kp_w=1.0;
+float ki_id=0.0004;//0.0004;
 float ki_iq=0.0015;
-float ki_w=0.00001;
+float ki_w=0.0001;
 
 float id_max=5;
 float iq_max=5;
@@ -128,12 +139,12 @@ float Tl_est=0;
 
 //Reference variables
 
-float id_ref = 2.0;    //Id reference
+float id_ref = 1.68;    //Id reference
 float w_ref = 0;     //Omega_electrical reference
 
 //Reference variables end
 
-float w_mult = 0.45;    //1.5*p*(Ld-Lq)/Id_ref to be updated as Id_ref changes
+float w_mult = 0.22;    //1.5*p*(Ld-Lq)/Id_ref to be updated as Id_ref changes
 
 //Kalman filter constants
 //
@@ -196,6 +207,7 @@ SetupEPwmTimer(void)
     ERTM;       // Enable Global realtime interrupt DBGM
 
 }
+
 
 
 void Init_svpwm()
@@ -305,8 +317,8 @@ void init_reg()
 
     pi_w.Kp = kp_w;
     pi_w.Ki = ki_w;
-    pi_w.Umax = 10;
-    pi_w.Umin = -10;
+    pi_w.Umax = 12;
+    pi_w.Umin = -12;
 
     /******************
      *  END OF BLOCK  *
@@ -334,29 +346,44 @@ void pi_controller()
     pi_id.Ref = id_ref;
     pi_id.Fbk = id;
     PI_MACRO(pi_id);
-    vd = (pi_id.Out - iq*w_e*Lq)/Vs;
+    vd = pi_id.Out;// - iq*w_e*Lq;//(pi_id.Out - iq*w_e*Lq)/Vs;
 
     //pi_we
-    pi_w.Ref = w_ref;
-    pi_w.Fbk = w;
+    pi_w.Ref = p*w_ref;
+    pi_w.Fbk = p*w;
     PI_MACRO(pi_w);
 
     //pi_iq
-    pi_iq.Ref = (pi_w.Out+Tl_est);//*w_mult;
+    pi_iq.Ref = (pi_w.Out)*w_mult;
     pi_iq.Fbk = iq;
     PI_MACRO(pi_iq);
-    vq = (pi_iq.Out + id*w_e*Ld)/Vs;
+    vq = pi_iq.Out;// + id*p*w_e*Ld;//(pi_iq.Out + id*w_e*Ld)/Vs;
     //vd = min(sqrt(Vs*Vs - vq*vq),vd);
 
 }
 
+void satv()
+{
+    float Vmag = vd*vd + vq*vq;
+    if(Vmag>(Vs*Vs))
+    {
+        float vm = sqrt(Vmag);
+        vd = vd/vm;
+        vq = vq/vm;
+    }
+    else
+    {
+        vd = vd/Vs;
+        vq = vq/Vs;
+    }
+}
 
 /**************************
  *   INVERSE PARK BLOCK   *
  **************************/
 void inv_park(float a)
 {
-    //inv_park
+    satv();
     ip_v.Ds=vd;
     ip_v.Qs=vq;
     ip_v.Sine=sin(a);
@@ -386,73 +413,92 @@ void sv_pwm()
 
 void ref()
 {
-    w_ref = 30;
-    if(TimerCount>400000)
+    w_ref = 2*PI;
+    if(TimerCount>20000)
     {
-        w_ref = -30;
+        start = 1;
     }
-    if(TimerCount>800000)
+    if(TimerCount>100000)
     {
-        w_ref = 30;
+        w_ref = -5.0*PI;
     }
+    if(TimerCount>200000)
+    {
+        w_ref = 0.0;
+    }
+}
+
+void record(int i)
+{
+    m_id[i] = id;
+    m_iq[i] = iq;
+    m_w[i] = w;
+    m_ia[i] = i_a;
+    m_ib[i] = i_b;
 }
 
 void get_speed()
 {
-    if(a[0] > a[1] && (a[0]-a[1])<PI)
+    iter_count=0;
+    w = (625.0*PI)/(float)EPwm1TimerIntCount;
+    a[2] = a[1];
+    a[1] = a[0];
+    if(a[1]>a[2] && (a[1]-a[2])>PI)
     {
-        sign = 1;
+        w = -w;
     }
-    else if(a[0] < a[1] && (a[1]-a[0])<PI)
+    if(a[1]<a[2] && (a[2] - a[1])<PI)
     {
-        sign = -1;
+        w = -w;
     }
-    else if((a[0]-a[1])>PI||(a[1]-a[0])>PI)
+//    if(abs(a[0]-a[1])>PI)
+//    {
+//        w = (a[1] - a[2])*2000.0;
+//    }
+//    else
+//    {
+//        w = 2000.0*(a[0]-a[1]);
+//    }
+      w = min(w,300);
+      w = max(w,-300);
+      w_e = p*w;
+}
+
+void filter(float *i_in, float *i_out, float data)
+{
+    int k;
+    for(k=2;k>0;k--)
     {
-        sign = ((a[1]>a[2])?-1:1);
+        i_in[k] = i_in[k-1];
+        i_out[k] = i_out[k-1];
     }
-    else if(a[0]==a[1]&&a[1]==a[2])
-    {
-        sign = 0;w = 0;
-    }
-    w = sign*PI*1250.0/(float)(EPwm1TimerIntCount);
-    w_rpm = sign*37500.0/(float)(EPwm1TimerIntCount);
-    w_e = p*w;
-    EPwm1TimerIntCount = 0;
+    i_in[0] = data;
+    i_out[0] = 1.9556*i_out[1] -0.9565*i_out[2] + 0.002414*(2*i_in[1]+i_in[0]+i_in[2]);
 }
 
 void signal_acq(float a)
 {
-    ia_in[2] = ia_in[1];
-    ib_in[2] = ib_in[1];
-    i_a[2] = i_a[1];
-    i_b[2] = i_b[1];
-    ia_in[1] = ia_in[0];
-    ib_in[1] = ib_in[0];
-    i_a[1] = i_a[0];
-    i_b[1] = i_b[0];
+    i_a = ((AdcMirror.ADCRESULT0-offA)*0.00073242)*(22.22);
+    i_b = ((AdcMirror.ADCRESULT1-offB)*0.00073242)*(22.22);
 
-    ia_in[0] = ((AdcMirror.ADCRESULT0-offA)*0.00073242)*(22.22);
-    ib_in[0] = ((AdcMirror.ADCRESULT1-offB)*0.00073242)*(22.22);
+    //filter(ia_in,ia_out,i_a);
+    //filter(ib_in,ib_out,i_b);
 
-//    test = ia_in[0]/10.0;
-//    pwmdac.MfuncC1 = test;
-//    PWMDAC_MACRO(5,pwmdac);
+    //i_a = ia_out[0];
+    //i_b = ib_out[0];
+    if(start && meas<200 && (TimerCount%200)==0)
+    {
+        record(meas++);
+    }
 
-    i_a[0] = ia_in[0];
-    i_b[0] = ib_in[0];
-
-    //i_a[0] = 1.4514*i_a[1] - 0.5724*i_a[2] + 0.0302*(ia_in[0] + ia_in[2]) + 0.0605*ia_in[1];
-    //i_b[0] = 1.4514*i_b[1] - 0.5724*i_b[2] + 0.0302*(ib_in[0] + ib_in[2]) + 0.0605*ib_in[1];
-
-    c1.As = i_a[0];
-    c1.Bs = i_b[0];
+    c1.As = i_a;
+    c1.Bs = i_b;
     CLARKE_MACRO(c1);
-    i_a[0] = c1.Alpha;
-    i_b[0] = c1.Beta;
+    i_a = c1.Alpha;
+    i_b = c1.Beta;
 
-    p1.Alpha = i_a[0];
-    p1.Beta = i_b[0];
+    p1.Alpha = i_a;
+    p1.Beta = i_b;
     p1.Cosine = cos(a);
     p1.Sine = sin(a);
     PARK_MACRO(p1);
@@ -480,16 +526,27 @@ epwm1_timer_isr(void)
     //s = 1-s;
     if(i>THRESH)
     {
+        //start = 1;
         iter_count++;
         ref();
-        int sn = GpioDataRegs.GPADAT.bit.GPIO25;
+
+
+//        if(iter_count>=5)
+//        {
+//            //get_speed();
+//            a[2] = a[1];
+//            a[1] = a[0];
+//        }
+
+        a[0] = get_angle();
+
+        int sn = (GpioDataRegs.GPADAT.bit.GPIO24);
         if(s!=sn || EPwm1TimerIntCount>10000)
         {
             s = sn;
             get_speed();
+            EPwm1TimerIntCount=0;
         }
-
-        a[0] = get_angle();
 
         signal_acq(a[0]);
 
@@ -509,12 +566,6 @@ epwm1_timer_isr(void)
         //sv_pwm(v_al,v_be);
         sv_pwm();
 
-        if(iter_count>=100)
-        {
-            iter_count=0;
-            a[2] = a[1];
-            a[1] = a[0];
-        }
     }
     else
     {
