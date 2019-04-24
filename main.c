@@ -48,11 +48,11 @@ unsigned int i=0;
 int meas = 0;
 int start = 0;
 
-float m_ia[200];
-float m_ib[200];
-float m_id[200];
-float m_iq[200];
-float m_w[200];
+//float m_ia[200];
+//float m_ib[200];
+float m_id[300];
+float m_iq[300];
+float m_w[300];
 
 float Lq = 0.35;
 float Ld = 0.086;
@@ -76,10 +76,10 @@ PI_CONTROLLER pi_w=PI_CONTROLLER_DEFAULTS;
 
 float kp_id=110.0;//50Hz //2200.0
 float kp_iq=54.0;//100Hz //540.0;
-float kp_w=100.0;
+float kp_w=10.0;
 float ki_id=3.714e-4;//0.0004;
 float ki_iq=0.0015;
-float ki_w=1e-5;
+float ki_w=1e-6;
 
 float vd=0.0;
 float vq=0.0;
@@ -98,7 +98,7 @@ volatile int s = 0;
 float id_ref = 1.68;
 float w_ref = 0;
 
-float w_mult = 0.22;    //1.5*p*(Ld-Lq)/Id_ref to be updated as Id_ref changes
+float w_mult = 0.7;    //1.5*p*(Ld-Lq)/Id_ref to be updated as Id_ref changes
 
 __interrupt void epwm1_timer_isr(void);
 
@@ -234,11 +234,6 @@ float max(float a, float b)
 
 void pi_controller()
 {
-    pi_id.Ref = id_ref;
-    pi_id.Fbk = id;
-    PI_MACRO(pi_id);
-    vd = pi_id.Out - pi_iq.Ref*p*w[0]*Lq;//(pi_id.Out - iq*w_e*Lq)/Vs;
-
     pi_w.Ref = p*w_ref;
     pi_w.Fbk = p*w[0];
     PI_MACRO(pi_w);
@@ -246,8 +241,12 @@ void pi_controller()
     pi_iq.Ref = (pi_w.Out)*w_mult;
     pi_iq.Fbk = iq;
     PI_MACRO(pi_iq);
-    vq = pi_iq.Out + id_ref*p*w[0]*Ld;//(pi_iq.Out + id*w_e*Ld)/Vs;
+    vq = pi_iq.Out;// + id_ref*p*w[0]*Ld;//(pi_iq.Out + id*w_e*Ld)/Vs;
 
+    pi_id.Ref = id_ref;
+    pi_id.Fbk = id;
+    PI_MACRO(pi_id);
+    vd = pi_id.Out;// - pi_iq.Ref*p*w[0]*Lq;//(pi_id.Out - iq*w_e*Lq)/Vs;
 }
 
 void satv()
@@ -319,8 +318,8 @@ void record(int i)
     m_id[i] = id;
     m_iq[i] = iq;
     m_w[i] = w[0];
-    m_ia[i] = i_a;
-    m_ib[i] = i_b;
+    //m_ia[i] = i_a;
+    //m_ib[i] = i_b;
 }
 
 void signal_acq(float a)
@@ -328,7 +327,7 @@ void signal_acq(float a)
     i_a = ((AdcMirror.ADCRESULT0-offA)*0.00073242)*(22.22);
     i_b = ((AdcMirror.ADCRESULT1-offB)*0.00073242)*(22.22);
 
-    if(start && meas<200 && (TimerCount%200)==0)
+    if(start && meas<300 && (TimerCount%100)==0)
     {
         record(meas++);
     }
@@ -352,15 +351,15 @@ void signal_acq(float a)
 void ref()
 {
     w_ref = 50*PI;
-    if(TimerCount>10)
+    if(TimerCount>70)
     {
         start = 1;
     }
-    if(TimerCount>100000)
+    if(TimerCount>40000)
     {
         w_ref = -50*PI;
     }
-    if(TimerCount>200000)
+    if(TimerCount>80000)
     {
         w_ref = 0.0;
     }
