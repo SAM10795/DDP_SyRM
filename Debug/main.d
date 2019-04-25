@@ -41,6 +41,7 @@ main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/pi.h
 main.obj: ../Gpio_encoder.h
 main.obj: ../sv_gen.h
 main.obj: C:/ti/controlSUITE/libs/app_libs/motor_control/drivers/f2833x_v2.0/f2833xileg_vdc.h
+main.obj: ../ekf.h
 
 ../main.c: 
 C:/ti/controlSUITE/device_support/f2833x/v142/DSP2833x_common/include/DSP28x_Project.h: 
@@ -83,3 +84,4 @@ C:/ti/controlSUITE/libs/app_libs/motor_control/math_blocks/v4.3/pi.h:
 ../Gpio_encoder.h: 
 ../sv_gen.h: 
 C:/ti/controlSUITE/libs/app_libs/motor_control/drivers/f2833x_v2.0/f2833xileg_vdc.h: 
+../ekf.h: 

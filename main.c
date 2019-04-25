@@ -11,6 +11,7 @@ long GlobalQ = GLOBAL_Q;      // Used for legacy GEL & Graph Debug.
 #include "Gpio_encoder.h"
 #include "sv_gen.h"
 #include "f2833xileg_vdc.h"
+#include "ekf.h"
 
 #define PI2 1.570796327
 #define PI23 2.09439510239
@@ -369,9 +370,22 @@ int main(void)
 {
     init_reg();
 
+//    data_t x_in[dim_Q] = {1.0,1.0,1.0,0.0,0.0};
+//    data_t u_in[dim_R] = {1.0,1.0};
+//    data_t y_in[dim_R] = {0.1,0.1};
+//
+//    data_t x_out[dim_Q];
+//    data_t p[dim_Q][dim_Q] = {{0.1,0.0,0.0,0.0,0.0},
+//                {0.0,0.1,0.0,0.0,0.0},
+//                {0.0,0.0,0.1,0.0,0.0},
+//                {0.0,0.0,0.0,0.01,0.0},
+//                {0.0,0.0,0.0,0.0,0.01}};
+
     for(;;)
     {
+        //ekf(x_in, u_in, y_in, x_out, p);
     }
+
 }
 
 __interrupt void
