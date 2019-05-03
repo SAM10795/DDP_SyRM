@@ -55,12 +55,12 @@ float m_id[300];
 float m_iq[300];
 float m_w[300];
 
-float Lq = 0.35;
-float Ld = 0.086;
+float Lq = 0.713;
+float Ld = 0.009;
 float Rs = 1.3;
 float p = 2;
 float T_step = 0.0001;
-float J = 0.068;
+float J = 0.1554;
 float B = 0.00675;
 
 float Vdc = 575;
@@ -99,7 +99,7 @@ volatile int s = 0;
 float id_ref = 1.68;
 float w_ref = 0;
 
-float w_mult = 0.7;    //1.5*p*(Ld-Lq)/Id_ref to be updated as Id_ref changes
+float w_mult = 0.7;    //1.5*p*(Ld-Lq)*Id_ref to be updated as Id_ref changes
 
 __interrupt void epwm1_timer_isr(void);
 
@@ -352,7 +352,7 @@ void signal_acq(float a)
 void ref()
 {
     w_ref = 50*PI;
-    if(TimerCount>70)
+    if(TimerCount>10)
     {
         start = 1;
     }
